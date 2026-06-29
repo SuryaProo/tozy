@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # TozYcozY — Luxury Fashion Website
 
 Premium React + TypeScript + GSAP fashion brand frontend.
@@ -75,3 +76,6 @@ For each product, you need:
 --black: #0A0A0A  (headings)
 --white: #FFFFFF  (background)
 ```
+=======
+# tozy
+>>>>>>> 21d6182627431127fdbd1df7adff0504ac8d0154
