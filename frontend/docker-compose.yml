@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  tozycozy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tozycozy-app
+    ports:
+      - "3000:80"      # visit http://localhost:3000
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
