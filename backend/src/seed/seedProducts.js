@@ -214,7 +214,8 @@ const run = async () => {
   console.log(`🌱 Seeding ${PRODUCTS.length} products...`);
   for (const p of PRODUCTS) {
     await Product.findOneAndUpdate(
-      { slug: p.slug }, p,
+      { slug: p.slug },
+      { $set: p },
       { upsert: true, returnDocument: 'after', runValidators: false }
     );
     console.log(`   ✓ ${p.title} ${p.titleLine2} (${p.slug})`);

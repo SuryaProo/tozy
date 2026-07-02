@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed/seedProducts.js"
+    "seed": "node src/seed/seedProducts.js",
+    "make-admin": "node src/seed/makeAdmin.js"
   },
   "keywords": [],
   "author": "",
