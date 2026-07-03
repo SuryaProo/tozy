@@ -1,0 +1,65 @@
+/* ── Category hero card (frontpage — 2 big cards) ── */
+.category-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  cursor: none;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  min-height: 480px;
+}
+.category-card:hover {
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+}
+
+/* background image */
+.cat-card-bg {
+  position: absolute; inset: 0;
+  background: var(--gray-100);
+}
+.cat-card-bg-img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.6s ease;
+}
+.category-card:hover .cat-card-bg-img { transform: scale(1.06); }
+.cat-card-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);
+}
+
+/* text content sits at bottom */
+.cat-card-content {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 32px 28px;
+  color: #fff;
+}
+.cat-card-eyebrow {
+  font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+  color: rgba(255,255,255,0.65); margin-bottom: 8px; font-weight: 500;
+}
+.cat-card-label {
+  font-size: clamp(32px, 5vw, 48px); font-weight: 900;
+  letter-spacing: -1.5px; line-height: 1.0; margin-bottom: 10px;
+  color: #fff;
+}
+.cat-card-desc {
+  font-size: 13px; color: rgba(255,255,255,0.7);
+  font-weight: 300; line-height: 1.6; margin-bottom: 24px;
+  max-width: 280px;
+}
+.cat-card-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+  font-weight: 600; color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.5);
+  padding-bottom: 3px; transition: border-color 0.2s;
+}
+.category-card:hover .cat-card-cta { border-bottom-color: #fff; }
+.cat-cta-arrow { transition: transform 0.2s; }
+.category-card:hover .cat-cta-arrow { transform: translateX(5px); }
+
+@media (max-width: 640px) {
+  .category-card { aspect-ratio: 4 / 5; min-height: 360px; }
+  .cat-card-content { padding: 24px 20px; }
+  .cat-card-label { font-size: 28px; }
+}
