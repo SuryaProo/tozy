@@ -24,7 +24,9 @@ import OrderHistoryPage from './pages/OrderHistoryPage';
 import CategoryPage from './pages/CategoryPage';
 import { useProducts } from './hooks/useProducts';
 import { CATEGORY_GROUPS } from './data/products';
+// @ts-ignore: allow importing css without type declarations
 import './styles/globals.css';
+// @ts-ignore: allow importing css without type declarations
 import './App.css';
 
 const pv = { initial:{opacity:0,y:24}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-16} };
