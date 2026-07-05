@@ -257,11 +257,13 @@ const Products: React.FC = () => {
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 const Orders: React.FC = () => {
-  const [orders, setOrders]     = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const [orders, setOrders]           = useState<any[]>([]);
+  const [loading, setLoading]         = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [msg, setMsg]           = useState('');
+  const [updating, setUpdating]       = useState<string | null>(null);
+  const [msg, setMsg]                 = useState('');
+  const [expanded, setExpanded]       = useState<string | null>(null);
+  const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -272,17 +274,22 @@ const Orders: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
-  const updateStatus = async (orderId: string, status: string, trackingNumber?: string) => {
+  const updateStatus = async (orderId: string, status: string) => {
+    const trackingNumber = trackingInputs[orderId] || undefined;
     setUpdating(orderId);
     const r = await api.put(`/admin/orders/${orderId}/status`, { status, trackingNumber });
     setUpdating(null);
-    if (r.success) { setMsg(`✅ Order ${orderId} → ${status}`); setTimeout(()=>setMsg(''),3000); load(); }
+    if (r.success) {
+      setMsg(`✅ ${orderId} → ${status}${trackingNumber ? ` | Tracking: ${trackingNumber}` : ''} — Email sent!`);
+      setTimeout(() => setMsg(''), 4000);
+      load();
+    }
   };
 
   return (
     <div>
       <div className="adp-section-header">
-        <h2 className="adp-page-title">Orders</h2>
+        <h2 className="adp-page-title">Orders <span className="adp-count">({orders.length})</span></h2>
         <div className="adp-filter-row">
           {['all','Processing','Shipped','Delivered','Cancelled'].map(s => (
             <button key={s} className={`adp-filter-btn ${statusFilter===s?'active':''}`} onClick={()=>setStatusFilter(s)}>{s}</button>
@@ -290,49 +297,96 @@ const Orders: React.FC = () => {
         </div>
       </div>
       {msg && <div className="adp-flash ok">{msg}</div>}
-      {loading ? <div className="adp-loading">Loading…</div> : (
-        <div className="adp-table-wrap">
-          <table className="adp-table">
-            <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
-            <tbody>
-              {orders.map(o => (
-                <tr key={o.orderId}>
-                  <td className="adp-mono adp-bold">{o.orderId}</td>
-                  <td>
-                    <div className="adp-bold">{o.user?.name ?? 'Guest'}</div>
-                    <div className="adp-muted adp-small">{o.user?.email}</div>
-                  </td>
-                  <td className="adp-muted">{o.items?.length ?? 0} item{o.items?.length !== 1 ? 's' : ''}</td>
-                  <td className="adp-mono adp-bold">{fmt(o.total)}</td>
-                  <td>
-                    <span className="adp-status-badge" style={{ color: STATUS_COLORS[o.status] ?? '#000', borderColor: STATUS_COLORS[o.status] ?? '#ccc' }}>
-                      {o.status}
-                    </span>
-                  </td>
-                  <td className="adp-muted adp-small">{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
-                  <td>
-                    <select
-                      className="adp-status-select"
-                      value={o.status}
-                      onChange={e => updateStatus(o.orderId, e.target.value)}
-                      disabled={updating === o.orderId}
-                    >
-                      <option>Processing</option>
-                      <option>Shipped</option>
-                      <option>Delivered</option>
-                      <option>Cancelled</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading ? <div className="adp-loading">Loading…</div> : orders.length === 0 ? (
+        <div className="adp-empty"><p>No orders yet.</p></div>
+      ) : (
+        <div className="adp-orders-list">
+          {orders.map(o => (
+            <div key={o.orderId} className={`adp-order-card ${expanded === o.orderId ? 'expanded' : ''}`}>
+              <div className="adp-order-header" onClick={() => setExpanded(expanded === o.orderId ? null : o.orderId)}>
+                <div className="adp-order-id">
+                  <span className="adp-mono adp-bold">{o.orderId}</span>
+                  <span className="adp-muted adp-small">{new Date(o.createdAt).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'})}</span>
+                </div>
+                <div className="adp-order-customer">
+                  <span className="adp-bold">{o.user?.name ?? 'Guest'}</span>
+                  <span className="adp-muted adp-small">{o.user?.email}</span>
+                  {o.user?.phone && <span className="adp-muted adp-small">📱 +91 {o.user.phone}</span>}
+                </div>
+                <span className="adp-mono adp-bold">{fmt(o.total)}</span>
+                <span className="adp-status-badge" style={{color:STATUS_COLORS[o.status]??'#000',borderColor:STATUS_COLORS[o.status]??'#ccc'}}>{o.status}</span>
+                <span className="adp-expand-icon">{expanded === o.orderId ? '▲' : '▼'}</span>
+              </div>
+
+              {expanded === o.orderId && (
+                <div className="adp-order-details">
+                  <div className="adp-detail-section">
+                    <div className="adp-detail-title">🛍️ Items Ordered</div>
+                    {(o.items ?? []).map((item: any, i: number) => (
+                      <div key={i} className="adp-order-item">
+                        <span>{item.emoji} <strong>{item.title} {item.titleLine2}</strong></span>
+                        <span className="adp-muted">Size: {item.size} · Qty: {item.quantity}</span>
+                        <span className="adp-mono">{fmt(item.price * item.quantity)}</span>
+                      </div>
+                    ))}
+                    <div className="adp-order-total-row">
+                      <span>Payment: <strong>{(o.paymentMethod||'cod').toUpperCase()}</strong></span>
+                      <span>Total: <strong>{fmt(o.total)}</strong></span>
+                    </div>
+                  </div>
+
+                  <div className="adp-detail-section">
+                    <div className="adp-detail-title">📦 Delivery Address</div>
+                    <div className="adp-address-box">
+                      <div className="adp-bold">{o.address?.firstName} {o.address?.lastName}</div>
+                      <div>{o.address?.street}</div>
+                      <div>{o.address?.city} — {o.address?.pin}</div>
+                      <div>📱 {o.address?.phone}</div>
+                    </div>
+                  </div>
+
+                  <div className="adp-detail-section">
+                    <div className="adp-detail-title">🚚 Update Status & Tracking</div>
+                    <div className="adp-status-update-row">
+                      <div className="adp-field" style={{flex:1}}>
+                        <label>Tracking Number (AWB — Shiprocket/Delhivery)</label>
+                        <input
+                          className="adp-input"
+                          placeholder="e.g. 1234567890"
+                          value={trackingInputs[o.orderId] ?? o.trackingNumber ?? ''}
+                          onChange={e => setTrackingInputs(prev => ({...prev, [o.orderId]: e.target.value}))}
+                        />
+                      </div>
+                      <div className="adp-status-btns">
+                        {['Processing','Shipped','Delivered','Cancelled'].map(s => (
+                          <button
+                            key={s}
+                            className={`adp-btn adp-btn-sm ${o.status===s?'adp-btn-primary':''} ${s==='Cancelled'?'adp-btn-danger':''}`}
+                            onClick={() => updateStatus(o.orderId, s)}
+                            disabled={updating === o.orderId || o.status === s}
+                          >
+                            {updating === o.orderId ? '…' : s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {o.trackingNumber && (
+                      <div className="adp-tracking-info">
+                        ✅ Tracking: <strong>{o.trackingNumber}</strong> —{' '}
+                        <a href={`https://shiprocket.co/tracking/${o.trackingNumber}`} target="_blank" rel="noreferrer">Track ↗</a>
+                      </div>
+                    )}
+                    <p className="adp-muted adp-small" style={{marginTop:6}}>📧 Customer gets email on every status change.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 };
-
 // ── Customers ─────────────────────────────────────────────────────────────────
 const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);

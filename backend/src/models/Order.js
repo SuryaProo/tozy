@@ -37,7 +37,10 @@ const orderSchema = new mongoose.Schema(
     subtotal: { type: Number, required: true },
     shipping: { type: Number, default: 0 },
     total: { type: Number, required: true },
-    trackingNumber: { type: String, default: '' },
+    trackingNumber:    { type: String, default: '' },
+    razorpayOrderId:   { type: String, default: '' },
+    razorpayPaymentId: { type: String, default: '' },
+    paid:              { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'],

@@ -7,6 +7,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuthGuard } from '../hooks/useAuthGuard';
 import ExplodedView from './ExplodedView';
+import SizeGuide from './SizeGuide';
 import './ProductDetail.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -310,6 +311,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack }) => {
                   </button>
                 ))}
               </div>
+              {/* Size Guide — inline below sizes */}
+              <SizeGuide
+                category={product.category as 'Shirts' | 'Shoes'}
+                onSizeSelect={(size) => setSelectedSize(size)}
+              />
             </div>
 
             {product.price && (

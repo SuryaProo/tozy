@@ -46,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payment', require('./routes/paymentRoutes'));
 
 // ── 404 + error handling ──
 app.use(notFound);

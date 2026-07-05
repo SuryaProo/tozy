@@ -17,3 +17,15 @@ router.get('/me', protect, getMe);
 router.post('/logout', logout);
 
 module.exports = router;
+
+// Address routes (protected)
+const { getAddresses, addAddress, deleteAddress, setDefaultAddress } = require('../controllers/authController');
+router.get('/addresses',                          protect, getAddresses);
+router.post('/addresses',                         protect, addAddress);
+router.delete('/addresses/:addressId',            protect, deleteAddress);
+router.put('/addresses/:addressId/default',       protect, setDefaultAddress);
+
+// Email verification routes (protected)
+const { sendEmailVerification, verifyEmail } = require('../controllers/authController');
+router.post('/email/send-verify', protect, sendEmailVerification);
+router.post('/email/verify',      protect, verifyEmail);

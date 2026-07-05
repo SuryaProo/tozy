@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../utils/api';
+import VerifySuccess from './VerifySuccess';
 import './AuthModal.css';
 
 type Mode = 'login' | 'register' | 'mobile';
 
 const AuthModal: React.FC = () => {
-  const { isLoginOpen, closeLogin, login, register, requestOtp, verifyOtp } = useAuth();
+  const { isLoginOpen, closeLogin, login, register, requestOtp, verifyOtp, emailVerifyOpen, setEmailVerifyOpen, refreshUser } = useAuth();
   const [mode, setMode]         = useState<Mode>('login');
   const [name, setName]         = useState('');
   const [email, setEmail]       = useState('');
@@ -20,15 +22,29 @@ const AuthModal: React.FC = () => {
   const [phone, setPhone]       = useState('');
   const [otpSent, setOtpSent]   = useState(false);
   const [otpCode, setOtpCode]   = useState('');
-  const [otpName, setOtpName]   = useState('');     // asked only for brand-new mobile users
-  const [devOtp, setDevOtp]     = useState('');      // shown in dev mode for easy testing
+  const [otpName, setOtpName]   = useState('');
+  const [devOtp, setDevOtp]     = useState('');
+  const [smsSent, setSmsSent]   = useState(false);
+  const [emailHint, setEmailHint] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+  const [showEmailVerify, setShowEmailVerify] = useState(false);
+  const [emailOtp, setEmailOtp]               = useState('');
+  const [verifyLoading, setVerifyLoading]     = useState(false);
+  const [showSuccess, setShowSuccess]         = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = isLoginOpen ? 'hidden' : '';
     if (isLoginOpen) setTimeout(() => inputRef.current?.focus(), 120);
     return () => { document.body.style.overflow = ''; };
   }, [isLoginOpen]);
+
+  // Auto-show email verification screen when opened from cart
+  useEffect(() => {
+    if (emailVerifyOpen && isLoginOpen) {
+      setShowEmailVerify(true);
+      setEmailVerifyOpen(false);
+    }
+  }, [emailVerifyOpen, isLoginOpen, setEmailVerifyOpen]);
 
   // Reset everything when switching modes or closing
   useEffect(() => {
@@ -59,13 +75,20 @@ const AuthModal: React.FC = () => {
       if (mode === 'login') {
         const res = await login(email, password);
         if (!res.ok) setError(res.error ?? 'Login failed.');
-        else setSuccess('Welcome back!');
+        else {
+          setSuccess('Welcome back!');
+          setTimeout(() => closeLogin(), 1200);
+        }
       } else {
-        if (!name.trim()) { setError('Name is required.'); return; }
-        if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+        if (!name.trim()) { setError('Name is required.'); setLoading(false); return; }
+        if (password.length < 6) { setError('Password must be at least 6 characters.'); setLoading(false); return; }
         const res = await register(name, email, password);
         if (!res.ok) setError(res.error ?? 'Registration failed.');
-        else setSuccess('Account created! Welcome to TozYcozY.');
+        else {
+          // Backend already sent email verification OTP during register
+          setSuccess('Account created! Check your email for OTP.');
+          setShowEmailVerify(true);
+        }
       }
     } finally {
       setLoading(false);
@@ -84,7 +107,9 @@ const AuthModal: React.FC = () => {
       }
       setOtpSent(true);
       setResendTimer(30);
-      if (res.devOtp) setDevOtp(res.devOtp); // dev convenience — backend only sends this outside production
+      setSmsSent(res.smsSent ?? false);
+      setEmailHint(res.emailHint ?? '');
+      if (res.devOtp) setDevOtp(res.devOtp);
     } finally {
       setLoading(false);
     }
@@ -120,13 +145,14 @@ const AuthModal: React.FC = () => {
   };
 
   return (
+    <>
     <AnimatePresence>
-      {isLoginOpen && (
+      {(isLoginOpen || showEmailVerify) && (
         <motion.div
           className="auth-backdrop"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          onClick={closeLogin}
+          onClick={() => { if (!showEmailVerify) closeLogin(); }}
         >
           <motion.div
             className="auth-modal"
@@ -138,13 +164,69 @@ const AuthModal: React.FC = () => {
             role="dialog"
             aria-modal="true"
           >
-            <button className="auth-close" onClick={closeLogin} aria-label="Close">✕</button>
+            <button className="auth-close" onClick={() => { if (showEmailVerify) { setShowEmailVerify(false); } closeLogin(); }} aria-label="Close">✕</button>
 
             <div className="auth-brand">
               <span className="auth-logo-t">TOZY</span>
               <span className="auth-logo-c">COZY</span>
             </div>
 
+            {/* Email verification step — shows after register */}
+            {showEmailVerify ? (
+              <div className="auth-verify-wrap">
+                <div className="auth-verify-icon">📧</div>
+                <h3 className="auth-verify-title">Verify your email</h3>
+                <p className="auth-verify-sub">
+                  We sent a 6-digit OTP to <strong>{email}</strong>.<br />
+                  Enter it below to verify your account.
+                </p>
+                {error   && <div className="auth-error">{error}</div>}
+                {success && <div className="auth-success">{success}</div>}
+                <input
+                  className="auth-input"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="Enter 6-digit OTP"
+                  value={emailOtp}
+                  onChange={e => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  autoFocus
+                />
+                <button
+                  className="auth-submit"
+                  disabled={verifyLoading || emailOtp.length !== 6}
+                  onClick={async () => {
+                    setError(''); setVerifyLoading(true);
+                    try {
+                      const res = await api.post('/auth/email/verify', { code: emailOtp });
+                      if (res.success) {
+                        // Refresh user so emailVerified becomes true
+                        await refreshUser();
+                        // Close modal, show 3D success popup
+                        setShowEmailVerify(false);
+                        closeLogin();
+                        setShowSuccess(true);
+                      } else {
+                        setError(res.message || 'Invalid OTP.');
+                      }
+                    } catch {
+                      setError('Verification failed. Try again.');
+                    } finally {
+                      setVerifyLoading(false);
+                    }
+                  }}
+                >
+                  {verifyLoading ? 'Verifying…' : 'Verify Email →'}
+                </button>
+                <button
+                  className="auth-skip-verify"
+                  onClick={() => { setShowEmailVerify(false); closeLogin(); }}
+                >
+                  Skip for now (verify later)
+                </button>
+              </div>
+            ) : (
+            <>
             {/* Tabs */}
             <div className="auth-tabs">
               <button className={`auth-tab ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>
@@ -271,7 +353,17 @@ const AuthModal: React.FC = () => {
                       </button>
 
                       <div className="auth-field">
-                        <label className="auth-label">Enter OTP sent to +91 {phone}</label>
+                        {/* Show where OTP was sent */}
+                        {smsSent ? (
+                          <label className="auth-label">Enter OTP sent to +91 {phone}</label>
+                        ) : emailHint ? (
+                          <div className="auth-sms-fallback">
+                            <span>📱 SMS could not be delivered</span>
+                            <span>📧 OTP sent to <strong>{emailHint}</strong> instead</span>
+                          </div>
+                        ) : (
+                          <label className="auth-label">Enter OTP sent to +91 {phone}</label>
+                        )}
                         <input
                           className="auth-input otp-input"
                           type="text"
@@ -335,10 +427,19 @@ const AuthModal: React.FC = () => {
               {mode === 'register' && <> Already have an account? <button type="button" onClick={() => setMode('login')}>Sign in</button></>}
               {mode === 'mobile' && <> Prefer email? <button type="button" onClick={() => setMode('login')}>Sign in with email</button></>}
             </p>
+            </>
+            )}
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+
+    {/* 3D Success celebration */}
+    <VerifySuccess
+      show={showSuccess}
+      onDone={() => setShowSuccess(false)}
+    />
+    </>
   );
 };
 

@@ -84,7 +84,11 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setOrders(prev => [mapped, ...prev]);
       return { ok: true, order: mapped };
     }
-    return { ok: false, error: res.message || 'Failed to place order.' };
+    return {
+      ok: false,
+      error: res.message || 'Failed to place order.',
+      requiresEmailVerification: res.requiresEmailVerification,
+    };
   }, []);
 
   return (

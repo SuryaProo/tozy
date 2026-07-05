@@ -13,6 +13,8 @@ import WishlistDrawer from './components/WishlistDrawer';
 import AuthModal from './components/AuthModal';
 import SearchOverlay from './components/SearchOverlay';
 import Hero from './components/Hero';
+import OfferSlider from './components/OfferSlider';
+import ScrollStory from './components/ScrollStory';
 import CategoryCard from './components/ProductCard';
 import ProductDetail from './components/ProductDetail';
 import Footer from './components/Footer';
@@ -24,9 +26,7 @@ import OrderHistoryPage from './pages/OrderHistoryPage';
 import CategoryPage from './pages/CategoryPage';
 import { useProducts } from './hooks/useProducts';
 import { CATEGORY_GROUPS } from './data/products';
-// @ts-ignore: allow importing css without type declarations
 import './styles/globals.css';
-// @ts-ignore: allow importing css without type declarations
 import './App.css';
 
 const pv = { initial:{opacity:0,y:24}, animate:{opacity:1,y:0}, exit:{opacity:0,y:-16} };
@@ -147,8 +147,17 @@ const AppInner: React.FC<{
             {/* ── HOME ── */}
             {pageKey === 'home' && (
               <motion.main key={`home-${heroKey}`} variants={pv} initial="initial" animate="animate" exit="exit" transition={pt}>
-                <Hero animKey={heroKey} />
 
+                {/* 1. Offer Slider */}
+                <OfferSlider onCategoryClick={openCategory} />
+
+                {/* 2. New Hero — dark, marquee, tilt cards */}
+                <Hero animKey={heroKey} onShopClick={openCategory} />
+
+                {/* 3. Scroll Story — TOZY COZY sticky */}
+                <ScrollStory onShopClick={openCategory} />
+
+                {/* 4. Products — Shirts + Shoes cards */}
                 <section className="products-section" id="products">
                   <motion.div className="products-intro"
                     initial={{ opacity:0, y:32 }} animate={{ opacity:1, y:0 }}
@@ -179,7 +188,7 @@ const AppInner: React.FC<{
                   )}
                 </section>
 
-                {/* Featured products strip */}
+                {/* 5. Just Dropped — featured products */}
                 {!productsLoading && products.length > 0 && (
                   <section className="featured-section">
                     <div className="featured-header">
@@ -203,14 +212,14 @@ const AppInner: React.FC<{
                                 (p.images && p.images.length > 0)
                                   ? p.images[0]
                                   : ({
-                                    'shirt-linen-white': 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&q=80',
-                                    'shirt-linen-black': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80',
-                                    'shirt-oxford-blue': 'https://images.unsplash.com/photo-1594938298603-c8148c4b4c6c?w=400&q=80',
-                                    'shirt-linen-olive': 'https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?w=400&q=80',
-                                    'shoes-leather-tan': 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80',
-                                    'shoes-leather-black': 'https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=400&q=80',
-                                    'shoes-white-minimal': 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=400&q=80',
-                                    'shoes-chelsea-brown': 'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=400&q=80',
+                                    'shirt-linen-white':  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&q=80',
+                                    'shirt-linen-black':  'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&q=80',
+                                    'shirt-oxford-blue':  'https://images.unsplash.com/photo-1594938298603-c8148c4b4c6c?w=400&q=80',
+                                    'shirt-linen-olive':  'https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?w=400&q=80',
+                                    'shoes-leather-tan':  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80',
+                                    'shoes-leather-black':'https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=400&q=80',
+                                    'shoes-white-minimal':'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=400&q=80',
+                                    'shoes-chelsea-brown':'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?w=400&q=80',
                                   } as Record<string,string>)[p.id] || 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=400&q=80'
                               }
                               alt={`${p.title} ${p.titleLine2}`}

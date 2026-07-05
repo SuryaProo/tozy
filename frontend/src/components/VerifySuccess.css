@@ -1,0 +1,87 @@
+/* ── Backdrop ── */
+.vs-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+/* ── Card ── */
+.vs-card {
+  position: relative;
+  background: #fff;
+  border-radius: 24px;
+  padding: 48px 40px 32px;
+  text-align: center;
+  min-width: 280px;
+  max-width: 340px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0,0,0,0.06);
+  transform-style: preserve-3d;
+  perspective: 800px;
+  overflow: visible;
+}
+
+/* ── Confetti dots ── */
+.vs-confetti {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── Checkmark ── */
+.vs-check {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #C41E3A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 32px rgba(196, 30, 58, 0.35);
+}
+
+/* ── Text ── */
+.vs-title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  color: #0a0a0a;
+  margin-bottom: 8px;
+  line-height: 1.1;
+}
+
+.vs-sub {
+  font-size: 18px;
+  color: #555;
+  font-weight: 400;
+  margin-bottom: 28px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Progress bar ── */
+.vs-progress-wrap {
+  height: 3px;
+  background: #f0f0ee;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vs-progress-bar {
+  height: 100%;
+  background: #C41E3A;
+  border-radius: 2px;
+  transform-origin: left;
+}

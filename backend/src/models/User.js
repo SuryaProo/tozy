@@ -57,7 +57,8 @@ const userSchema = new mongoose.Schema(
         isDefault: { type: Boolean, default: false },
       },
     ],
-    isDisabled: { type: Boolean, default: false },
+    isDisabled:     { type: Boolean, default: false },
+    emailVerified:  { type: Boolean, default: false },
     role: {
       type: String,
       enum: ['customer', 'admin'],

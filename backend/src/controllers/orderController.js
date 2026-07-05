@@ -1,4 +1,5 @@
 const Order = require('../models/Order');
+const { sendOrderConfirmation, sendOrderStatusUpdate } = require('../utils/email');
 const Product = require('../models/Product');
 
 const genOrderId = () => 'TZC' + Math.random().toString(36).slice(2, 9).toUpperCase();
@@ -10,6 +11,19 @@ const placeOrder = async (req, res, next) => {
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Cart is empty.' });
+    }
+
+    // ── EMAIL VERIFICATION CHECK ──────────────────────────────────────────
+    const userDoc = await require('../models/User').findById(req.user._id);
+
+    // If user has email but hasn't verified it — block order
+    if (userDoc?.email && !userDoc?.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email before placing an order.',
+        requiresEmailVerification: true,
+        email: userDoc.email,
+      });
     }
 
     // Re-fetch product details server-side — never trust prices sent from the client
@@ -51,6 +65,11 @@ const placeOrder = async (req, res, next) => {
       status: 'Processing',
     });
 
+    // Send order confirmation email (non-blocking)
+    if (userDoc?.email) {
+      sendOrderConfirmation(order, userDoc.email, userDoc.name).catch(() => {});
+    }
+
     res.status(201).json({ success: true, order });
   } catch (err) {
     next(err);
@@ -74,6 +93,11 @@ const getOrderById = async (req, res, next) => {
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
+    // Send status update email (non-blocking)
+    if (order.user?.email) {
+      sendOrderStatusUpdate(order, order.user.email, order.user.name).catch(() => {});
+    }
+
     res.json({ success: true, order });
   } catch (err) {
     next(err);

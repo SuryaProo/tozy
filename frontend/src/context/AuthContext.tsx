@@ -13,6 +13,10 @@ interface AuthContextType {
   logout: () => void;
   openLogin: () => void;
   closeLogin: () => void;
+  openEmailVerify: () => void;
+  emailVerifyOpen: boolean;
+  setEmailVerifyOpen: (v: boolean) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -20,6 +24,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser]             = useState<AuthUser | null>(null);
   const [isLoginOpen, setLoginOpen] = useState(false);
+  const [emailVerifyOpen, setEmailVerifyOpen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
   // On app mount, check if a valid session cookie already exists (auto-login)
@@ -48,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await api.post('/auth/register', { name, email, password });
     if (res.success && res.user) {
       setUser(res.user);
-      setLoginOpen(false);
+      // DON'T close modal here — AuthModal will show email verify screen first
       return { ok: true };
     }
     return { ok: false, error: res.message || 'Registration failed.' };
@@ -58,7 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const requestOtp = useCallback(async (phone: string) => {
     const res = await api.post('/auth/otp/request', { phone });
     if (res.success) {
-      return { ok: true, devOtp: res.devOtp as string | undefined };
+      return {
+        ok:        true,
+        devOtp:    res.devOtp    as string | undefined,
+        smsSent:   res.smsSent  as boolean | undefined,
+        emailHint: res.emailHint as string | undefined,
+      };
     }
     return { ok: false, error: res.message || 'Failed to send OTP.' };
   }, []);
@@ -78,14 +88,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await api.post('/auth/logout');
   }, []);
 
-  const openLogin  = useCallback(() => setLoginOpen(true), []);
-  const closeLogin = useCallback(() => setLoginOpen(false), []);
+  const refreshUser = useCallback(async () => {
+    const res = await api.get('/auth/me');
+    if (res.success && res.user) setUser(res.user);
+  }, []);
+
+  const openLogin       = useCallback(() => setLoginOpen(true), []);
+  const closeLogin      = useCallback(() => setLoginOpen(false), []);
+  const openEmailVerify = useCallback(() => { setEmailVerifyOpen(true); setLoginOpen(true); }, []);
 
   return (
     <AuthContext.Provider value={{
       user, isLoginOpen, authLoading,
       login, register, requestOtp, verifyOtp, logout,
-      openLogin, closeLogin,
+      openLogin, closeLogin, openEmailVerify,
+      emailVerifyOpen, setEmailVerifyOpen,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

@@ -311,3 +311,82 @@
 .adp-shell textarea {
   cursor: text !important;
 }
+
+/* ── Order cards ── */
+.adp-orders-list { display: flex; flex-direction: column; gap: 10px; }
+
+.adp-order-card {
+  background: #fff; border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+  overflow: hidden; transition: box-shadow 0.2s;
+}
+.adp-order-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+.adp-order-card.expanded { border-color: rgba(0,0,0,0.15); }
+
+.adp-order-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 14px 18px; cursor: pointer;
+  flex-wrap: wrap;
+}
+.adp-order-header:hover { background: #fafaf8; }
+
+.adp-order-id { display: flex; flex-direction: column; gap: 2px; min-width: 140px; }
+.adp-order-customer { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 160px; }
+.adp-expand-icon { color: #aaa; font-size: 11px; margin-left: auto; }
+
+/* Details */
+.adp-order-details {
+  border-top: 1px solid rgba(0,0,0,0.07);
+  padding: 20px 18px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.adp-order-details > .adp-detail-section:last-child {
+  grid-column: 1 / -1;
+}
+
+.adp-detail-section { display: flex; flex-direction: column; gap: 8px; }
+.adp-detail-title {
+  font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  color: #888; font-weight: 700; margin-bottom: 4px;
+}
+
+.adp-order-item {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; padding: 6px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04); flex-wrap: wrap;
+}
+.adp-order-item:last-child { border: none; }
+
+.adp-order-total-row {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: #555; padding-top: 8px;
+  border-top: 1px solid rgba(0,0,0,0.07); margin-top: 4px;
+}
+
+/* Address box */
+.adp-address-box {
+  background: #f8f8f6; border-radius: 8px;
+  padding: 12px 14px; font-size: 13px;
+  line-height: 1.7; color: #444;
+}
+.adp-address-box .adp-bold { font-size: 14px; color: #0a0a0a; }
+
+/* Status update row */
+.adp-status-update-row {
+  display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+}
+.adp-status-btns {
+  display: flex; gap: 6px; flex-wrap: wrap; padding-bottom: 2px;
+}
+
+.adp-tracking-info {
+  font-size: 12px; color: #16a34a; margin-top: 6px;
+  padding: 8px 12px; background: #f0fdf4;
+  border-radius: 6px; border: 1px solid #bbf7d0;
+}
+.adp-tracking-info a { color: #1d4ed8; text-decoration: underline; }
+
+@media (max-width: 768px) {
+  .adp-order-details { grid-template-columns: 1fr; }
+}

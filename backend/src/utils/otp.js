@@ -1,42 +1,52 @@
-/**
- * OTP utilities.
- *
- * generateOtp() makes a 6-digit code.
- * sendOtpSms() currently just LOGS the OTP to the server console —
- * this lets you test the full mobile-login flow with zero cost / zero setup.
- *
- * To go live with real SMS, replace the body of sendOtpSms() with a call to
- * Twilio, MSG91, Fast2SMS, or any Indian SMS gateway. The function signature
- * (phone, code) => Promise<void> stays the same, so nothing else changes.
- */
-
-const generateOtp = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
-};
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const sendOtpSms = async (phone, code) => {
-  // ── DEV MODE: prints to terminal ──
-  console.log('\n📱 ──────────────────────────────');
-  console.log(`   OTP for +91${phone}: ${code}`);
-  console.log('   (Replace utils/otp.js → sendOtpSms with a real SMS API in production)');
-  console.log('────────────────────────────────\n');
 
-  // ── PRODUCTION EXAMPLE (Twilio) — uncomment and fill in credentials ──
-  // const twilio = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
-  // await twilio.messages.create({
-  //   body: `Your TozYcozY OTP is ${code}. Valid for 5 minutes.`,
-  //   from: process.env.TWILIO_PHONE,
-  //   to: `+91${phone}`,
-  // });
+  // ── 2Factor ──────────────────────────────────────────────────────────────
+  if (process.env.TWO_FACTOR_KEY) {
+    try {
+      // Method 1: AUTOGEN template (works without DLT)
+      const url = `https://2factor.in/API/V1/${process.env.TWO_FACTOR_KEY}/SMS/${phone}/AUTOGEN/TozYcozY`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      console.log('📱 2Factor AUTOGEN response:', JSON.stringify(data));
 
-  // ── PRODUCTION EXAMPLE (MSG91 / Fast2SMS, India-focused) ──
-  // await fetch('https://api.msg91.com/api/v5/otp', {
-  //   method: 'POST',
-  //   headers: { authkey: process.env.MSG91_KEY, 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ mobile: `91${phone}`, otp: code }),
-  // });
+      if (data.Status === 'Success') {
+        console.log(`📱 OTP SMS sent to +91${phone}`);
+        return { sent: true };
+      }
 
-  return true;
+      // Method 2: Custom OTP with our code
+      const url2 = `https://2factor.in/API/V1/${process.env.TWO_FACTOR_KEY}/SMS/${phone}/${code}`;
+      const res2  = await fetch(url2);
+      const data2 = await res2.json();
+      console.log('📱 2Factor direct response:', JSON.stringify(data2));
+
+      if (data2.Status === 'Success') {
+        console.log(`📱 OTP sent via direct method to +91${phone}`);
+        return { sent: true };
+      }
+
+    } catch (err) {
+      console.error('📱 2Factor error:', err.message);
+    }
+  }
+
+  // ── Fast2SMS fallback ─────────────────────────────────────────────────────
+  if (process.env.FAST2SMS_KEY) {
+    try {
+      const res = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: { authorization: process.env.FAST2SMS_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ route: 'q', message: `${code} is your TozYcozY OTP. Valid 5 mins.`, language: 'english', flash: 0, numbers: phone }),
+      });
+      const data = await res.json();
+      if (data.return === true) return { sent: true };
+    } catch (_) {}
+  }
+
+  console.log(`\n📱 [FALLBACK] OTP for +91${phone}: ${code}\n`);
+  return { sent: false, devMode: true };
 };
 
 module.exports = { generateOtp, sendOtpSms };

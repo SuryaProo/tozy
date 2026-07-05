@@ -104,12 +104,23 @@ const updateOrderStatus = async (req, res, next) => {
     const { status, trackingNumber } = req.body;
     const update = { status };
     if (trackingNumber) update.trackingNumber = trackingNumber;
+
     const order = await Order.findOneAndUpdate(
       { orderId: req.params.orderId },
       update,
       { new: true }
-    ).populate('user', 'name email');
+    ).populate('user', 'name email phone');
+
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+
+    // Send status update email to customer
+    if (order.user?.email) {
+      const { sendOrderStatusUpdate } = require('../utils/email');
+      sendOrderStatusUpdate(order, order.user.email, order.user.name).catch(err => {
+        console.error('Status email failed:', err.message);
+      });
+    }
+
     res.json({ success: true, order });
   } catch (err) { next(err); }
 };

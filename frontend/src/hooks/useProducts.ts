@@ -18,7 +18,7 @@ const mapBackendProduct = (p: any): Product => ({
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>(FALLBACK_PRODUCTS);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading]   = useState(false);  // Start false — fallback always ready
   const [usingFallback, setUsingFallback] = useState(true);
 
   useEffect(() => {
@@ -32,7 +32,6 @@ export const useProducts = () => {
         setProducts(res.products.map(mapBackendProduct));
         setUsingFallback(false);
       } else {
-        // Backend not reachable / DB empty — keep showing fallback data
         setProducts(FALLBACK_PRODUCTS);
         setUsingFallback(true);
       }
