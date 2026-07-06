@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useNavigate, useLocation, BrowserRouter } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
@@ -44,48 +45,68 @@ const AppInner: React.FC<{
   const [activeCategory, setActiveCategory]   = useState<ActiveCategory>(null);
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [heroKey, setHeroKey]                 = useState(0);
-  const [showAdmin, setShowAdmin]             = useState(window.location.hash === '#admin');
+  const [showAdmin, setShowAdmin]             = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { user, openLogin } = useAuth();
 
-  // Allow navigating to admin via URL hash
+  // ── Sync URL → state (handles browser back/forward) ──
   useEffect(() => {
-    const onHash = () => setShowAdmin(window.location.hash === '#admin');
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []);
+    const path = location.pathname;
+    if (path === '/admin') { setShowAdmin(true); return; }
+    setShowAdmin(false);
+
+    // Parse path: /shirts, /shoes, /shirts/shirt-linen-white
+    const parts = path.split('/').filter(Boolean);
+    if (parts.length === 0) {
+      setActiveCategory(null); setActiveProductId(null); setActivePage('home');
+    } else if (parts[0] === 'shirts' && !parts[1]) {
+      setActiveCategory('shirts'); setActiveProductId(null);
+    } else if (parts[0] === 'shoes' && !parts[1]) {
+      setActiveCategory('shoes'); setActiveProductId(null);
+    } else if (parts.length === 2) {
+      setActiveCategory(parts[0] as ActiveCategory);
+      setActiveProductId(parts[1]);
+    } else if (['craft','about','contact','orders'].includes(parts[0])) {
+      setActivePage(parts[0] as Page);
+    }
+  }, [location.pathname]);
+
+  // Allow navigating to admin via URL
+  useEffect(() => {
+    if (location.pathname === '/admin') setShowAdmin(true);
+  }, [location.pathname]);
 
   const goHome = useCallback(() => {
-    setActiveProductId(null);
-    setActiveCategory(null);
-    setActivePage('home');
     setHeroKey(k => k + 1);
+    navigate('/');
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, []);
+  }, [navigate]);
 
   const openCategory = useCallback((cat: ActiveCategory) => {
-    setActiveCategory(cat);
-    setActiveProductId(null);
-    setActivePage('home');
+    navigate(`/${cat}`);
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, []);
+  }, [navigate]);
 
   const openProduct = useCallback((id: string) => {
-    setActiveProductId(id);
+    const cat = id.includes('shoe') ? 'shoes' : 'shirts';
+    navigate(`/${cat}/${id}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [navigate]);
 
   const backToCategory = useCallback(() => {
-    setActiveProductId(null);
+    const cat = activeCategory || (activeProductId?.includes('shoe') ? 'shoes' : 'shirts');
+    navigate(`/${cat}`);
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, []);
+  }, [navigate, activeCategory, activeProductId]);
 
   const handleNavClick = useCallback((page: Page) => {
-    setActiveProductId(null);
-    setActiveCategory(null);
-    setActivePage(page);
+    if (page === 'home') navigate('/');
+    else navigate(`/${page}`);
     window.scrollTo({ top: 0, behavior: 'auto' });
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (activePage === 'orders' && !user) {
@@ -111,7 +132,7 @@ const AppInner: React.FC<{
     return (
       <AdminPortal onExit={() => {
         setShowAdmin(false);
-        window.location.hash = '';
+        navigate('/');
       }} />
     );
   }
@@ -294,7 +315,7 @@ const AppInner: React.FC<{
   );
 };
 
-const App: React.FC = () => {
+const AppInnerRouter: React.FC = () => {
   const { products, loading: productsLoading, usingFallback } = useProducts();
   return (
     <AuthProvider>
@@ -310,5 +331,11 @@ const App: React.FC = () => {
     </AuthProvider>
   );
 };
+
+const App: React.FC = () => (
+  <BrowserRouter>
+    <AppInnerRouter />
+  </BrowserRouter>
+);
 
 export default App;
