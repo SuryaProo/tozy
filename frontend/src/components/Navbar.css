@@ -228,3 +228,29 @@
   .nav-hamburger { display: flex; }
   .nav-breadcrumb { display: none; }
 }
+
+/* ── Breadcrumb trail ── */
+.nav-breadcrumb-trail {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; flex: 1; justify-content: center;
+}
+.nav-bc-home, .nav-bc-item {
+  background: none; border: none; font-family: var(--font);
+  font-size: 12px; font-weight: 600;
+  color: var(--nav-text-muted);
+  letter-spacing: 0.3px; padding: 4px 8px;
+  border-radius: 4px; transition: color 0.2s, background 0.15s;
+  cursor: none;
+}
+.nav-bc-home:hover, .nav-bc-item:hover {
+  color: var(--nav-text); background: var(--nav-hover-bg);
+}
+.nav-bc-sep { color: var(--nav-text-muted); font-size: 16px; opacity: 0.4; }
+.nav-bc-current {
+  font-size: 12px; font-weight: 700;
+  color: var(--nav-text); letter-spacing: 0.3px;
+}
+
+@media (max-width: 768px) {
+  .nav-breadcrumb-trail { display: none; }
+}

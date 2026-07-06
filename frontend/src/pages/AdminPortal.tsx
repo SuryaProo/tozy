@@ -101,6 +101,7 @@ const Products: React.FC = () => {
   const [images, setImages]       = useState('');
   const [features, setFeatures]   = useState('');
   const [featured, setFeatured]   = useState(false);
+  const [parts, setParts]         = useState<Array<{id:string;name:string;detail:string;tooltip:string;icon:string}>>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,7 +119,7 @@ const Products: React.FC = () => {
     setSlug(''); setCategory('Shirts'); setEmoji('👕'); setTitle(''); setLine2('');
     setSubtitle(''); setEyebrow('Premium Linen Collection'); setCardDesc('');
     setPrice(''); setSku(''); setStock('100'); setTags(''); setImages('');
-    setFeatures(''); setFeatured(false);
+    setFeatures(''); setFeatured(false); setParts([]);
     setShowForm(true);
   };
 
@@ -130,6 +131,7 @@ const Products: React.FC = () => {
     setStock(String(p.stock ?? 100)); setTags((p.tags ?? []).join(', '));
     setImages((p.images ?? []).join('\n')); setFeatures((p.features ?? []).join('\n'));
     setFeatured(p.isFeatured ?? false);
+    setParts((p.parts ?? []).map((pt: any) => ({ id: pt.id||'', name: pt.name||'', detail: pt.detail||'', tooltip: pt.tooltip||'', icon: pt.icon||'📦' })));
     setShowForm(true);
   };
 
@@ -149,7 +151,12 @@ const Products: React.FC = () => {
       sizes: category === 'Shoes'
         ? [{label:'38',available:true},{label:'39',available:true},{label:'40',available:true},{label:'41',available:true},{label:'42',available:false},{label:'43',available:true},{label:'44',available:true}]
         : [{label:'XS',available:true},{label:'S',available:true},{label:'M',available:true},{label:'L',available:true},{label:'XL',available:true},{label:'XXL',available:false}],
-      specs: [], parts: [],
+      specs: [],
+      parts: parts.filter(p => p.name.trim()).map((p, i) => ({
+        ...p,
+        gridCol: (i % 4) + 1,
+        gridRow: Math.floor(i / 4) + 1,
+      })),
     };
     const r = editing
       ? await api.put(`/admin/products/${editing.slug}`, payload)
@@ -218,6 +225,118 @@ const Products: React.FC = () => {
               <div className="adp-field"><label>Tags (comma separated)</label><input value={tags} onChange={e=>setTags(e.target.value)} placeholder="shirt, linen, white" /></div>
               <div className="adp-field"><label>Image URLs (one per line)</label><textarea value={images} onChange={e=>setImages(e.target.value)} rows={3} placeholder="https://..." /></div>
               <div className="adp-field"><label>Features (one per line)</label><textarea value={features} onChange={e=>setFeatures(e.target.value)} rows={4} placeholder="Premium Linen&#10;Relaxed Fit" /></div>
+              {/* ── Parts editor ── */}
+              <div className="adp-parts-section">
+                <div className="adp-parts-header">
+                  <div>
+                    <div className="adp-field-label">Product Parts (Anatomy section)</div>
+                    <div className="adp-muted adp-small">Each part shows in the exploded view with icon + tooltip on hover</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="adp-btn adp-btn-ghost adp-btn-sm"
+                    onClick={() => {
+                      const shirtDefaults = [
+                        {id:'collar',      name:'Collar',       detail:'100% Linen',     tooltip:'Hand-finished structured collar',          icon:'🪡'},
+                        {id:'collar-stand',name:'Collar Stand', detail:'Fused',           tooltip:'Fused interfacing for crisp structure',    icon:'📐'},
+                        {id:'left-panel',  name:'Left Panel',   detail:'Button Placket',  tooltip:'Double-stitched reinforced placket',        icon:'🧵'},
+                        {id:'right-panel', name:'Right Panel',  detail:'Clean Cut',       tooltip:'Precision-cut linen, no fraying',           icon:'✂️'},
+                        {id:'back-yoke',   name:'Back Yoke',    detail:'Reinforced',      tooltip:'Structural back yoke for shoulder support', icon:'🟫'},
+                        {id:'buttons',     name:'Buttons',      detail:'Natural Wood',    tooltip:'Hand-selected natural wood finish buttons', icon:'🔘'},
+                        {id:'pocket',      name:'Pocket',       detail:'Patch Style',     tooltip:'Double-stitch patch pocket construction',   icon:'🪢'},
+                        {id:'back-panel',  name:'Back Panel',   detail:'Relaxed Fit',     tooltip:'Drape-cut for ease of movement',            icon:'🟦'},
+                        {id:'left-sleeve', name:'Left Sleeve',  detail:'Premium Cut',     tooltip:'Set-in sleeve, matched pattern',            icon:'💪'},
+                        {id:'right-sleeve',name:'Right Sleeve', detail:'Mirror Match',    tooltip:'Matched pair — no pattern offset',          icon:'💪'},
+                        {id:'left-cuff',   name:'Left Cuff',    detail:'Single Button',   tooltip:'Adjustable one-button barrel cuff',         icon:'⬜'},
+                        {id:'right-cuff',  name:'Right Cuff',   detail:'Single Button',   tooltip:'Mirror-matched, adjustable cuff',           icon:'⬜'},
+                        {id:'hem',         name:'Hem',          detail:'Clean Finish',    tooltip:'Double-fold hem, locked lockstitch',        icon:'➰'},
+                        {id:'labels',      name:'Labels',       detail:'Organic Cotton',  tooltip:'Soft-touch organic cotton care label',      icon:'🏷️'},
+                        {id:'side-seam',   name:'Side Seam',    detail:'French Seam',     tooltip:'French seam — no raw edges inside',        icon:'📏'},
+                        {id:'buttonholes', name:'Buttonholes',  detail:'Hand Stitched',   tooltip:'Hand-finished buttonholes, no fraying',    icon:'⭕'},
+                      ];
+                      const shoeDefaults = [
+                        {id:'toe-box',   name:'Toe Box',     detail:'Structured Cap',   tooltip:'Reinforced toe cap — holds shape for years',  icon:'👆'},
+                        {id:'vamp',      name:'Vamp',        detail:'Upper Front',      tooltip:'Full-grain leather, hand-stitched vamp',      icon:'🟤'},
+                        {id:'lacing',    name:'Lacing',      detail:'Waxed Cotton',     tooltip:'Round waxed laces, premium aged finish',      icon:'🪢'},
+                        {id:'eyelets',   name:'Eyelets',     detail:'Brass Grommets',   tooltip:'Oxidized brass grommets, rust-resistant',     icon:'⭕'},
+                        {id:'quarter',   name:'Quarter',     detail:'Side Upper',       tooltip:'Seamless side panel — no pressure points',    icon:'🔺'},
+                        {id:'counter',   name:'Counter',     detail:'Heel Stiffener',   tooltip:'Leather heel counter for rigid hold',         icon:'🦵'},
+                        {id:'tongue',    name:'Tongue',      detail:'Padded Gusset',    tooltip:'Soft-lined, gusset-attached tongue',          icon:'🏷️'},
+                        {id:'collar',    name:'Ankle Collar',detail:'Padded Edge',      tooltip:'Padded ankle collar — no chafing',           icon:'⬜'},
+                        {id:'insole',    name:'Insole',      detail:'Cork + Latex',     tooltip:'Cork & latex footbed — moulds to your foot', icon:'🛏️'},
+                        {id:'shank',     name:'Shank',       detail:'Steel Arch',       tooltip:'Steel shank for arch support and stability',  icon:'🔩'},
+                        {id:'welt',      name:'Welt',        detail:'Goodyear Strip',   tooltip:'Goodyear welt — resole-ready, built to last', icon:'📏'},
+                        {id:'midsole',   name:'Midsole',     detail:'Leather Fill',     tooltip:'Leather midsole for natural cushioning',      icon:'🟫'},
+                        {id:'outsole',   name:'Outsole',     detail:'Vibram Rubber',    tooltip:'Vibram V-Trek — all-terrain anti-slip grip',  icon:'⚫'},
+                        {id:'last',      name:'Last Shape',  detail:'Birch Wood',       tooltip:'Hand-lasted over birch wood for perfect fit', icon:'🪵'},
+                        {id:'stitching', name:'Stitching',   detail:'18 SPI',           tooltip:'18 stitches per inch — no skipped stitches',  icon:'🧵'},
+                        {id:'heel',      name:'Heel Block',  detail:'Stacked Leather',  tooltip:'Stacked leather heel, replaceable top piece', icon:'🔷'},
+                      ];
+                      setParts(category === 'Shoes' ? shoeDefaults : shirtDefaults);
+                    }}
+                  >
+                    Auto-fill {category} defaults (16 parts)
+                  </button>
+                </div>
+
+                {parts.length === 0 ? (
+                  <div className="adp-parts-empty">
+                    No parts added. Click "Auto-fill" or add manually below.
+                  </div>
+                ) : (
+                  <div className="adp-parts-grid">
+                    {parts.map((part, i) => (
+                      <div key={i} className="adp-part-row">
+                        <div className="adp-part-emoji-wrap">
+                          <input
+                            className="adp-input adp-part-emoji"
+                            value={part.icon}
+                            onChange={e => setParts(prev => prev.map((p,idx) => idx===i ? {...p,icon:e.target.value} : p))}
+                            placeholder="📦"
+                            title="Emoji icon — paste any emoji"
+                            maxLength={4}
+                          />
+                          <span className="adp-part-emoji-preview">{part.icon || '📦'}</span>
+                        </div>
+                        <input
+                          className="adp-input adp-part-name"
+                          placeholder="Name (e.g. Collar)"
+                          value={part.name}
+                          onChange={e => setParts(prev => prev.map((p,idx) => idx===i ? {...p,name:e.target.value,id:e.target.value.toLowerCase().replace(/\s+/g,'-')} : p))}
+                        />
+                        <input
+                          className="adp-input adp-part-detail"
+                          placeholder="Detail (e.g. 100% Linen)"
+                          value={part.detail}
+                          onChange={e => setParts(prev => prev.map((p,idx) => idx===i ? {...p,detail:e.target.value} : p))}
+                        />
+                        <input
+                          className="adp-input adp-part-tooltip"
+                          placeholder="Hover tooltip"
+                          value={part.tooltip}
+                          onChange={e => setParts(prev => prev.map((p,idx) => idx===i ? {...p,tooltip:e.target.value} : p))}
+                        />
+                        <button
+                          type="button"
+                          className="adp-btn adp-btn-sm adp-btn-danger"
+                          onClick={() => setParts(prev => prev.filter((_,idx) => idx!==i))}
+                          title="Remove"
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  className="adp-btn adp-btn-ghost adp-btn-sm"
+                  style={{marginTop: 8}}
+                  onClick={() => setParts(prev => [...prev, {id:'',name:'',detail:'',tooltip:'',icon:'📦'}])}
+                >
+                  + Add Part
+                </button>
+              </div>
+
               <label className="adp-checkbox"><input type="checkbox" checked={featured} onChange={e=>setFeatured(e.target.checked)} /> Featured on homepage</label>
               <div className="adp-form-actions">
                 <button type="submit" className="adp-btn adp-btn-primary" disabled={saving}>{saving ? 'Saving…' : editing ? 'Update Product' : 'Add Product'}</button>

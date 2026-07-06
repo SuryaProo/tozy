@@ -139,8 +139,10 @@ const AppInner: React.FC<{
           <Navbar
             activeProduct={activeProductId}
             activePage={activePage}
+            activeCategory={activeCategory}
             onLogoClick={goHome}
             onNavClick={handleNavClick}
+            onBackToCategory={activeCategory ? backToCategory : undefined}
           />
 
           <AnimatePresence mode="wait">

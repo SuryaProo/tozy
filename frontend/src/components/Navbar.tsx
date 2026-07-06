@@ -12,8 +12,10 @@ export type Page = 'home' | 'craft' | 'about' | 'contact' | 'orders';
 interface NavbarProps {
   activeProduct: string | null;
   activePage: Page;
+  activeCategory?: string | null;
   onLogoClick: () => void;
   onNavClick: (page: Page) => void;
+  onBackToCategory?: () => void;
 }
 
 const NAV_LINKS: { label: string; page: Page }[] = [
@@ -28,7 +30,7 @@ const isDarkSection = (): boolean => {
   const darkEls = document.querySelectorAll<HTMLElement>(
     '.hero-sticky, .ss-sticky, .offer-slider, .hero-wrap'
   );
-  for (const el of darkEls) {
+  for (const el of Array.from(darkEls)) {
     const rect = el.getBoundingClientRect();
     // If the element covers the top 80px (where navbar is)
     if (rect.top <= 0 && rect.bottom >= 60) return true;
@@ -36,7 +38,7 @@ const isDarkSection = (): boolean => {
   return false;
 };
 
-const Navbar: React.FC<NavbarProps> = ({ activeProduct, activePage, onLogoClick, onNavClick }) => {
+const Navbar: React.FC<NavbarProps> = ({ activeProduct, activePage, activeCategory, onLogoClick, onNavClick, onBackToCategory }) => {
   const navRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled]       = useState(false);
@@ -96,28 +98,43 @@ const Navbar: React.FC<NavbarProps> = ({ activeProduct, activePage, onLogoClick,
           <span className="logo-tozy">TOZY</span><span className="logo-cozy">COZY</span>
         </button>
 
-        {/* Desktop links */}
-        <div className="nav-links">
-          {NAV_LINKS.map(link => (
-            <button
-              key={link.page}
-              className={`nav-link ${activePage === link.page ? 'active' : ''}`}
-              onClick={() => handleNav(link.page)}
-            >
-              {link.label}
-            </button>
-          ))}
-        </div>
+        {/* Desktop links OR Breadcrumb — never both */}
+        {(activeCategory || activeProduct) ? (
+          <div className="nav-breadcrumb-trail">
+            <button className="nav-bc-home" onClick={onLogoClick}>Home</button>
+            {activeCategory && (
+              <>
+                <span className="nav-bc-sep">›</span>
+                <button className="nav-bc-item" onClick={activeProduct ? onBackToCategory : onLogoClick}>
+                  {activeCategory === 'shirts' ? 'Shirts' : 'Shoes'}
+                </button>
+              </>
+            )}
+            {activeProduct && (
+              <>
+                <span className="nav-bc-sep">›</span>
+                <span className="nav-bc-current">
+                  {activeProduct.includes('shoe') ? 'Shoe Detail' : 'Shirt Detail'}
+                </span>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="nav-links">
+            {NAV_LINKS.map(link => (
+              <button
+                key={link.page}
+                className={`nav-link ${activePage === link.page ? 'active' : ''}`}
+                onClick={() => handleNav(link.page)}
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Right icons */}
         <div className="nav-actions">
-          {activeProduct && (
-            <span className="nav-breadcrumb">
-              / {activeProduct.includes('shoe') ? 'Shoes' : 'Shirts'}
-            </span>
-          )}
-
-          {/* Search */}
           <button className="nav-icon-btn" onClick={openSearch} aria-label="Search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>

@@ -8,7 +8,7 @@ interface AuthContextType {
   authLoading: boolean;       // true while checking existing session on app load
   login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  requestOtp: (phone: string) => Promise<{ ok: boolean; error?: string; devOtp?: string }>;
+  requestOtp: (phone: string) => Promise<{ ok: boolean; error?: string; devOtp?: string; smsSent?: boolean; emailHint?: string }>;
   verifyOtp: (phone: string, code: string, name?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
   openLogin: () => void;
